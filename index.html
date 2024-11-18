@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Hubot+Sans:ital,wght@0,200..900;1,200..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+
+  <title>Synbot Chat</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #32394D;
+      color: #333;
+    }
+
+    #chat-container {
+      background-color: #1F2937;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+      width: 1200px;
+      max-width: 90%;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #D51F24;
+      text-align: center;
+      margin-bottom: 20px;
+      font-family: "Hubot Sans", sans-serif;
+    }
+
+    #chat-history {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      padding-right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      max-width: 70%;
+      padding: 12px;
+      border-radius: 15px;
+      font-size: 16px;
+      line-height: 1.4;
+      display: inline-block;
+      word-wrap: break-word;
+    }
+
+    .user-message {
+      background-color: #7f1c1f;
+      color: #fff;
+      align-self: flex-end; /* Align user message to the right */
+      border-top-right-radius: 5px;
+    }
+
+    .bot-message {
+      background-color: #4a4e54;
+      color: #f1efef;
+      align-self: flex-start; /* Align bot message to the left */
+      border-top-left-radius: 5px;
+    }
+  #chat-history::-webkit-scrollbar {
+    width: 6px;  /* Thin scrollbar */
+  }
+
+  #chat-history::-webkit-scrollbar-track {
+    background: #4a4e54;  /* Light background for the track */
+  }
+
+  #chat-history::-webkit-scrollbar-thumb {
+    background: #333;  /* Dark scrollbar thumb */
+    border-radius: 10px; /* Rounded corners */
+  }
+
+  #chat-history::-webkit-scrollbar-thumb:hover {
+    background: #555;  /* Darker thumb when hovered */
+  }
+  
+  .bot-message::-webkit-scrollbar {
+    width: 6px;  /* Thin scrollbar */
+  }
+
+  .bot-message::-webkit-scrollbar-track {
+    background: #4a4e54;  /* Light background for the track */
+  }
+
+  .bot-message::-webkit-scrollbar-thumb {
+    background: #333;  /* Dark scrollbar thumb */
+    border-radius: 10px; /* Rounded corners */
+  }
+
+  .bot-message::-webkit-scrollbar-thumb:hover {
+    background: #555;  /* Darker thumb when hovered */
+  }
+
+    form {
+      display: flex;
+      align-items: center;
+    }
+
+    input {
+      flex-grow: 1;
+      padding: 12px;
+      border: 2px solid #ccc;
+      border-radius: 20px;
+      font-size: 16px;
+      margin-right: 10px;
+      transition: border-color 0.3s ease;
+      background-color: transparent;
+      color: rgb(176, 176, 176);
+    }
+
+    input:focus {
+      border-color: #7f1c1f;
+      outline: none;
+    }
+
+    button {
+      background-color: #7f1c1f;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #cd595d;
+    }
+
+    #loader {
+      display: none; 
+      /* position: fixed; */
+      /* top: 75%; */
+      /* left: 1%; */
+      /* transform: translate(-50%, -50%); */
+    }
+
+    #loader img {
+      width: 50px;
+      height: 50px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="chat-container">
+    <h1>SYNBOT</h1>
+    <div id="chat-history">
+     
+    </div>
+    <div id="loader">
+      <img src="loader.gif" alt="Loading...">
+    </div>
+  
+    <form id="chat-form">
+      <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+ 
+  <script>
+    const chatHistory = document.getElementById('chat-history');
+    const userInput = document.getElementById('user-input');
+    const form = document.getElementById('chat-form');
+    const loader = document.getElementById('loader');
+
+    async function sendMessage() {
+      const userMessage = userInput.value;
+      userInput.value = ''; // Clear input field
+      if (!userMessage.trim()) return;  // Don't send empty messages
+      
+      // Display user's message immediately
+      displayUserMessage(userMessage);
+
+      // Show loader while bot is "thinking"
+      loader.style.display = 'block';
+
+      try {
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userInput: userMessage }),
+        });
+
+        const data = await response.json();
+        const botMessage = data.response;
+
+        // Display bot's message after the loader is hidden
+        displayBotMessage(botMessage);
+      } catch (error) {
+        console.error('Error:', error);
+        displayBotMessage('Sorry, there was an error processing your request.');
+      } finally {
+        // Hide loader after response is displayed
+        loader.style.display = 'none';
+      }
+    }
+
+    function displayUserMessage(message) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', 'user-message');
+      messageElement.textContent = message;
+      chatHistory.appendChild(messageElement);
+      chatHistory.scrollTop = chatHistory.scrollHeight;  // Scroll to the bottom
+    }
+
+    function displayBotMessage(message) {
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message', 'bot-message');
+
+  // Convert Markdown to HTML
+  const converter = new showdown.Converter();
+  messageElement.innerHTML = converter.makeHtml(message);
+
+  chatHistory.appendChild(messageElement);
+  chatHistory.scrollTop = chatHistory.scrollHeight;  // Scroll to the bottom
+}
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault(); // Prevent form submission
+      sendMessage();  // Send the message
+    });
+  </script>
+</body>
+</html>
